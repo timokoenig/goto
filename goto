@@ -1,0 +1,70 @@
+#!/bin/sh
+#===============================================================================
+# Title             goto
+# Author            Timo Koenig <dev@timokoenig.de>
+# Date              09/12/2017
+# Version           0.1
+# Description       Script to jump to specific locations on your machine
+# License           MIT License
+# Source            https://github.com/timokoenig/goto
+#
+# Usage             goto [--add] [--clear] <name> <location>
+#
+# IMPORTANT NOTE:
+# Add ". goto" to your .bashrc to allow this script to run on the current shell.
+#===============================================================================
+
+function goto() {
+    FILE="$HOME/.goto"
+
+    if [ "$1" = "--clear" ]; then
+        echo "You are about to clear all saved locations. Are you sure?"
+        select yn in "Yes" "No"; do
+            case $yn in
+                Yes)
+                    rm -f $FILE
+                    echo "Cleared all goto locations"
+                    break
+                    ;;
+                No) exit;;
+            esac
+        done
+        return
+    fi
+
+    # Check if the goto file exists
+    if [ ! -e "$FILE" ]; then
+        # File not found; create a new one
+        touch $FILE
+    fi
+
+    if [ $# -eq 0 ]; then
+        # List all locations
+        cat "$FILE"
+        return
+    fi
+
+    # Add new location
+    if [ "$1" = "--add" ]; then
+        if [ "$#" -ne 3 ]; then
+            echo "Illegal number of arguments"
+            return
+        fi
+
+        NEW_LOCATION="$2 $3"
+        echo "$NEW_LOCATION" >> $FILE
+        return
+    fi
+
+    # Go to location
+    while read -r line; do
+        IFS=" " read NAME LOCATION <<< "$line"
+        if [ "$1" = "$NAME" ]; then
+            cd $LOCATION
+            return
+        fi
+    done < "$FILE"
+
+    echo "No matching location"
+}
+
